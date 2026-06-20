@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlipIQ — Resale Intelligence</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0d0f12;
+    --surface: #161a20;
+    --surface2: #1e242d;
+    --border: #2a3140;
+    --accent: #00e5a0;
+    --accent-dim: rgba(0,229,160,0.12);
+    --accent-glow: rgba(0,229,160,0.25);
+    --warn: #ff6b35;
+    --warn-dim: rgba(255,107,53,0.12);
+    --text: #e8edf5;
+    --muted: #6b7a94;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: var(--sans);
+    white-space: nowrap;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .panel { display: none; padding: 28px; max-width: 900px; }
+  .panel.active { display: block; }
+
+  input[type="text"], input[type="number"], select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  button {
+    background: var(--accent);
+    color: #0a0f0c;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+
+  button:hover { opacity: 0.88; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-weight: 500;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .search-row input[type="text"] { flex: 1; }
+
+  /* CARDS & RESULTS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 16px;
+  }
+
+  .card h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+  }
+
+  .trend-result { display: none; }
+  .trend-result.visible { display: block; }
+
+  .trend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .trend-product-name { font-size: 1.1rem; font-weight: 700; }
+
+  .score-pill {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .score-hot { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
+  .score-warm { background: rgba(255,200,50,0.12); color: #ffc832; border: 1px solid #ffc832; }
+  .score-cold { background: rgba(107,122,148,0.15); color: var(--muted); border: 1px solid var(--border); }
+  .score-risky { background: var(--warn-dim); color: var(--warn); border: 1px solid var(--warn); }
+
+  .trend-body { font-size: 0.88rem; color: #c2cad8; line-height: 1.7; margin-bottom: 16px; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .metric-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+
+  .metric-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .metric-value.green { color: var(--accent); }
+  .metric-value.orange { color: var(--warn); }
+  .metric-value.yellow { color: #ffc832; }
+
+  .loading { display: none; align-items: center; gap: 12px; color: var(--muted); font-size: 0.88rem; padding: 20px 0; }
+  .loading.visible { display: flex; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th { text-align: left; padding: 10px 12px; font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface2); }
+  td { padding: 12px 12px; vertical-align: middle; }
+  .td-mono { font-family: var(--mono); font-size: 0.82rem; }
+  .profit-pos { color: var(--accent); font-weight: 700; }
+  .profit-neg { color: var(--warn); font-weight: 700; }
+  .profit-pend { color: var(--muted); }
+
+  .status-badge { font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .status-sold { background: var(--accent-dim); color: var(--accent); }
+  .status-listed { background: rgba(255,200,50,0.12); color: #ffc832; }
+  .status-held { background: rgba(107,122,148,0.15); color: var(--muted); }
+
+  .btn-del { background: none; color: var(--muted); border: none; font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+  .btn-del:hover { color: var(--warn); background: var(--warn-dim); }
+
+  /* STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .stat-value { font-family: var(--mono); font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.neutral { color: var(--text); }
+
+  .empty-state { text-align: center; color: var(--muted); padding: 48px 20px; font-size: 0.9rem; }
+  .empty-state .icon { font-size: 2rem; margin-bottom: 10px; }
+
+  .section-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+
+  .error-msg { color: var(--warn); font-size: 0.82rem; margin-top: 8px; display: none; }
+
+  /* ARBITRAGE */
+  .arb-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .arb-input-group { display: flex; flex-direction: column; gap: 12px; }
+
+  .arb-results { display: none; }
+  .arb-results.visible { display: block; }
+
+  .arb-market-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 80px 80px 80px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+
+  .arb-market-row.header { font-weight: 600; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+
+  .flag-cell { font-size: 1.2rem; text-align: center; }
+
+  /* KEEPA */
+  .keepa-drop {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .keepa-drop:hover, .keepa-drop.dragover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .keepa-drop .icon { font-size: 2rem; margin-bottom: 8px; }
+
+  .keepa-table { max-height: 400px; overflow-y: auto; }
+
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .arb-grid { grid-template-columns: 1fr; }
+    .arb-market-row { grid-template-columns: 40px 1fr 70px 70px; }
+    .arb-market-row .arb-col-ship { display: none; }
+    .panel { padding: 16px; }
+    .tabs { padding: 0 12px; }
+    header { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">FlipIQ</div>
+    <div class="logo-sub">Resale Intelligence</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('trend', this)">🔍 Trends</button>
+  <button class="tab" onclick="switchTab('arbitrage', this)">🌍 Arbitrage</button>
+  <button class="tab" onclick="switchTab('keepa', this)">📈 Keepa</button>
+  <button class="tab" onclick="switchTab('inventory', this)">📦 Inventory</button>
+  <button class="tab" onclick="switchTab('dashboard', this)">📊 Dashboard</button>
+</div>
+
+<!-- TREND SCOUT -->
+<div id="panel-trend" class="panel active">
+  <div class="search-row">
+    <input type="text" id="trend-input" placeholder="e.g. Stanley cup, vintage Levi's, Pokémon cards…" onkeydown="if(event.key==='Enter') analyzeTrend()">
+    <button onclick="analyzeTrend()" id="trend-btn">Analyze</button>
+  </div>
+  <div class="loading" id="trend-loading"><div class="spinner"></div>Researching market trends…</div>
+  <div class="card trend-result" id="trend-result">
+    <div class="trend-header">
+      <div class="trend-product-name" id="result-name"></div>
+      <span class="score-pill" id="result-score"></span>
+    </div>
+    <div class="trend-body" id="result-body"></div>
+    <div class="metrics-grid" id="result-metrics"></div>
+  </div>
+</div>
+
+<!-- ARBITRAGE CALCULATOR -->
+<div id="panel-arbitrage" class="panel">
+  <div class="card">
+    <h3>Cross-Market Arbitrage Calculator</h3>
+    <div class="arb-grid">
+      <div class="arb-input-group">
+        <div class="form-group">
+          <label>Product Name</label>
+          <input type="text" id="arb-product" placeholder="e.g. Nivea SPF 30 200ml">
+        </div>
+        <div class="form-group">
+          <label>Your Buy Price (£)</label>
+          <input type="number" id="arb-buy" placeholder="5.90" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>Units to Ship</label>
+          <input type="number" id="arb-units" placeholder="10" min="1" value="10">
+        </div>
+      </div>
+      <div class="arb-input-group">
+        <div class="form-group">
+          <label>🇩🇪 Germany Sell Price (£)</label>
+          <input type="number" id="arb-de" placeholder="15.79" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>🇪🇸 Spain Sell Price (£)</label>
+          <input type="number" id="arb-es" placeholder="14.75" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>🇫🇷 France Sell Price (£)</label>
+          <input type="number" id="arb-fr" placeholder="15.35" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>🇮🇹 Italy Sell Price (£)</label>
+          <input type="number" id="arb-it" placeholder="13.86" step="0.01" min="0">
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <div class="form-group" style="flex:1;min-width:120px;">
+        <label>Platform Fee %</label>
+        <input type="number" id="arb-fee" value="15" step="0.1" min="0" max="100">
+      </div>
+      <div class="form-group" style="flex:1;min-width:120px;">
+        <label>Shipping per Unit (£)</label>
+        <input type="number" id="arb-ship" value="1.50" step="0.01" min="0">
+      </div>
+      <div class="form-group" style="flex:0 0 auto;display:flex;align-items:end;">
+        <button onclick="calcArbitrage()">Calculate</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card arb-results" id="arb-results">
+    <h3 id="arb-results-title">Results</h3>
+    <div class="arb-market-row header">
+      <div></div>
+      <div>Market</div>
+      <div>Profit/unit</div>
+      <div class="arb-col-ship">Margin</div>
+      <div>Total Profit</div>
+    </div>
+    <div id="arb-rows"></div>
+    <div class="metrics-grid" style="margin-top:16px;" id="arb-summary"></div>
+  </div>
+</div>
+
+<!-- KEEPA CSV -->
+<div id="panel-keepa" class="panel">
+  <div class="keepa-drop" id="keepa-drop" onclick="document.getElementById('keepa-file').click()">
+    <div class="icon">📂</div>
+    <div>Drag & drop a Keepa CSV export here, or tap to browse</div>
+    <div style="font-size:0.75rem;margin-top:6px;">Supports product exports from Keepa's Data tab</div>
+    <input type="file" id="keepa-file" accept=".csv,.tsv,.txt" style="display:none" onchange="handleKeepaFile(event)">
+  </div>
+  <div id="keepa-data"></div>
+</div>
+
+<!-- INVENTORY -->
+<div id="panel-inventory" class="panel">
+  <div class="card">
+    <h3>Log a Purchase</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Item Name</label>
+        <input type="text" id="item-name" placeholder="e.g. Air Jordan 1 Retro">
+      </div>
+      <div class="form-group">
+        <label>Bought For (£)</label>
+        <input type="number" id="item-cost" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Sold For (£)</label>
+        <input type="number" id="item-sale" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="item-status">
+          <option value="held">Holding</option>
+          <option value="listed">Listed</option>
+          <option value="sold">Sold</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button onclick="addItem()">Add</button>
+      </div>
+    </div>
+    <div class="error-msg" id="item-error">Please enter an item name and purchase price.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Item</th><th>Cost</th><th>Sale</th><th>Profit</th><th>Margin</th><th>Status</th><th></th></tr></thead>
+      <tbody id="inventory-body"></tbody>
+    </table>
+    <div class="empty-state" id="inventory-empty"><div class="icon">📦</div>No items yet. Log your first purchase above.</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="panel-dashboard" class="panel">
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="section-title">All Items</div>
+  <div id="dash-list"></div>
+</div>
+
+<script>
+  let inventory = [];
+  try { inventory = JSON.parse(localStorage.getItem('flipiq_inventory') || '[]'); } catch(e) { inventory = []; }
+
+  function saveInventory() {
+    try { localStorage.setItem('flipiq_inventory', JSON.stringify(inventory)); } catch(e) {}
+  }
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    if (name === 'dashboard') renderDashboard();
+    if (name === 'inventory') renderInventory();
+  }
+
+  // ── TREND SCOUT ──────────────────────────────────────────────
+  async function analyzeTrend() {
+    const q = document.getElementById('trend-input').value.trim();
+    if (!q) return;
+    const btn = document.getElementById('trend-btn');
+    const loading = document.getElementById('trend-loading');
+    const result = document.getElementById('trend-result');
+    btn.disabled = true;
+    loading.classList.add('visible');
+    result.classList.remove('visible');
+
+    const prompt = `You are a resale market expert specialising in eBay, Amazon, and Mercari trends in the UK and Europe.
+Analyse the resale potential of: "${q}"
+Use GBP (£) for all prices.
+Respond ONLY with a JSON object, no markdown, no preamble:
+{
+  "name": "clean product name",
+  "signal": "HOT" | "WARM" | "COLD" | "RISKY",
+  "summary": "2-3 sentence analysis of current demand, why people want it, and whether it's a good flip",
+  "avgBuyPrice": "estimated price to buy/source (e.g. £20-40)",
+  "avgSellPrice": "estimated resale price (e.g. £60-90)",
+  "typicalMargin": "typical profit margin % (e.g. 40-60%)",
+  "bestPlatform": "eBay | Amazon | Mercari | All",
+  "competition": "Low | Medium | High",
+  "trend": "Rising | Stable | Fading"
+}`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+      });
+      const data = await res.json();
+      const raw = data.content.map(b => b.text || '').join('');
+      const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      renderTrendResult(parsed);
+    } catch (e) {
+      document.getElementById('result-name').textContent = q;
+      document.getElementById('result-body').textContent = 'Could not load trend data. Please try again.';
+      document.getElementById('result-score').textContent = 'ERROR';
+      document.getElementById('result-score').className = 'score-pill score-cold';
+      document.getElementById('result-metrics').innerHTML = '';
+      result.classList.add('visible');
+    }
+    btn.disabled = false;
+    loading.classList.remove('visible');
+  }
+
+  function renderTrendResult(d) {
+    document.getElementById('result-name').textContent = d.name;
+    document.getElementById('result-body').textContent = d.summary;
+    const scoreEl = document.getElementById('result-score');
+    scoreEl.textContent = d.signal;
+    scoreEl.className = 'score-pill ' + ({ HOT:'score-hot', WARM:'score-warm', COLD:'score-cold', RISKY:'score-risky' }[d.signal] || 'score-cold');
+    const tc = d.trend === 'Rising' ? 'green' : d.trend === 'Fading' ? 'orange' : 'yellow';
+    const cc = d.competition === 'High' ? 'orange' : d.competition === 'Low' ? 'green' : 'yellow';
+    document.getElementById('result-metrics').innerHTML = `
+      <div class="metric-box"><div class="metric-label">Source Price</div><div class="metric-value">${d.avgBuyPrice}</div></div>
+      <div class="metric-box"><div class="metric-label">Resale Price</div><div class="metric-value green">${d.avgSellPrice}</div></div>
+      <div class="metric-box"><div class="metric-label">Typical Margin</div><div class="metric-value green">${d.typicalMargin}</div></div>
+      <div class="metric-box"><div class="metric-label">Best Platform</div><div class="metric-value">${d.bestPlatform}</div></div>
+      <div class="metric-box"><div class="metric-label">Competition</div><div class="metric-value ${cc}">${d.competition}</div></div>
+      <div class="metric-box"><div class="metric-label">Trend</div><div class="metric-value ${tc}">${d.trend}</div></div>`;
+    document.getElementById('trend-result').classList.add('visible');
+  }
+
+  // ── ARBITRAGE ──────────────────────────────────────────────
+  function calcArbitrage() {
+    const buy = parseFloat(document.getElementById('arb-buy').value) || 0;
+    const units = parseInt(document.getElementById('arb-units').value) || 1;
+    const feeRate = (parseFloat(document.getElementById('arb-fee').value) || 15) / 100;
+    const shipPerUnit = parseFloat(document.getElementById('arb-ship').value) || 0;
+    const product = document.getElementById('arb-product').value.trim() || 'Product';
+
+    const markets = [
+      { flag: '🇩🇪', name: 'Germany', sell: parseFloat(document.getElementById('arb-de').value) || 0 },
+      { flag: '🇪🇸', name: 'Spain', sell: parseFloat(document.getElementById('arb-es').value) || 0 },
+      { flag: '🇫🇷', name: 'France', sell: parseFloat(document.getElementById('arb-fr').value) || 0 },
+      { flag: '🇮🇹', name: 'Italy', sell: parseFloat(document.getElementById('arb-it').value) || 0 },
+    ].filter(m => m.sell > 0);
+
+    if (buy <= 0 || markets.length === 0) return;
+
+    let rows = '';
+    let bestMarket = null;
+    let bestProfit = -Infinity;
+
+    markets.forEach(m => {
+      const fee = m.sell * feeRate;
+      const profitPerUnit = m.sell - buy - fee - shipPerUnit;
+      const margin = m.sell > 0 ? (profitPerUnit / m.sell * 100) : 0;
+      const totalProfit = profitPerUnit * units;
+      const profitCls = profitPerUnit >= 0 ? 'profit-pos' : 'profit-neg';
+
+      if (profitPerUnit > bestProfit) { bestProfit = profitPerUnit; bestMarket = m.name; }
+
+      rows += `<div class="arb-market-row">
+        <div class="flag-cell">${m.flag}</div>
+        <div>${m.name}</div>
+        <div class="td-mono ${profitCls}">${profitPerUnit >= 0 ? '+' : ''}£${profitPerUnit.toFixed(2)}</div>
+        <div class="td-mono arb-col-ship ${profitCls}">${margin.toFixed(0)}%</div>
+        <div class="td-mono ${profitCls}">${totalProfit >= 0 ? '+' : ''}£${totalProfit.toFixed(2)}</div>
+      </div>`;
+    });
+
+    document.getElementById('arb-results-title').textContent = product;
+    document.getElementById('arb-rows').innerHTML = rows;
+
+    const totalInvestment = buy * units;
+    const bestTotal = bestProfit * units;
+    document.getElementById('arb-summary').innerHTML = `
+      <div class="metric-box"><div class="metric-label">Investment</div><div class="metric-value orange">£${totalInvestment.toFixed(2)}</div></div>
+      <div class="metric-box"><div class="metric-label">Best Market</div><div class="metric-value green">${bestMarket}</div></div>
+      <div class="metric-box"><div class="metric-label">Best Profit/Unit</div><div class="metric-value green">+£${bestProfit.toFixed(2)}</div></div>
+      <div class="metric-box"><div class="metric-label">Best Total (${units} units)</div><div class="metric-value green">+£${bestTotal.toFixed(2)}</div></div>`;
+
+    document.getElementById('arb-results').classList.add('visible');
+  }
+
+  // ── KEEPA CSV ──────────────────────────────────────────────
+  const keepaDrop = document.getElementById('keepa-drop');
+  keepaDrop.addEventListener('dragover', e => { e.preventDefault(); keepaDrop.classList.add('dragover'); });
+  keepaDrop.addEventListener('dragleave', () => keepaDrop.classList.remove('dragover'));
+  keepaDrop.addEventListener('drop', e => {
+    e.preventDefault();
+    keepaDrop.classList.remove('dragover');
+    if (e.dataTransfer.files.length) parseKeepaCSV(e.dataTransfer.files[0]);
+  });
+
+  function handleKeepaFile(e) {
+    if (e.target.files.length) parseKeepaCSV(e.target.files[0]);
+  }
+
+  function parseKeepaCSV(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const sep = text.indexOf('\t') !== -1 ? '\t' : ',';
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) { document.getElementById('keepa-data').innerHTML = '<div class="empty-state">No data found in file.</div>'; return; }
+
+      const headers = lines[0].split(sep).map(h => h.replace(/"/g, '').trim());
+      const rows = lines.slice(1).map(line => {
+        const vals = line.split(sep).map(v => v.replace(/"/g, '').trim());
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = vals[i] || '');
+        return obj;
+      });
+
+      // Find useful columns
+      const titleCol = headers.find(h => /title|product|name/i.test(h)) || headers[0];
+      const priceCol = headers.find(h => /price|buy box|amazon/i.test(h) && !/used/i.test(h));
+      const salesRankCol = headers.find(h => /sales rank|rank/i.test(h));
+      const categoryCol = headers.find(h => /categor/i.test(h));
+      const asinCol = headers.find(h => /asin/i.test(h));
+
+      let html = `<div class="card"><h3>Keepa Data — ${rows.length} products loaded</h3>`;
+      html += `<div class="keepa-table"><table><thead><tr>`;
+      if (asinCol) html += `<th>ASIN</th>`;
+      html += `<th>Product</th>`;
+      if (priceCol) html += `<th>Price</th>`;
+      if (salesRankCol) html += `<th>Sales Rank</th>`;
+      if (categoryCol) html += `<th>Category</th>`;
+      html += `</tr></thead><tbody>`;
+
+      rows.slice(0, 100).forEach(r => {
+        html += `<tr>`;
+        if (asinCol) html += `<td class="td-mono" style="font-size:0.75rem">${r[asinCol]}</td>`;
+        html += `<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r[titleCol]}</td>`;
+        if (priceCol) {
+          const p = parseFloat(r[priceCol]);
+          html += `<td class="td-mono">${isNaN(p) ? r[priceCol] : '£' + p.toFixed(2)}</td>`;
+        }
+        if (salesRankCol) html += `<td class="td-mono">${r[salesRankCol]}</td>`;
+        if (categoryCol) html += `<td style="font-size:0.8rem;color:var(--muted)">${r[categoryCol]}</td>`;
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+      if (rows.length > 100) html += `<div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Showing first 100 of ${rows.length} products</div>`;
+      html += `</div>`;
+
+      document.getElementById('keepa-data').innerHTML = html;
+    };
+    reader.readAsText(file);
+  }
+
+  // ── INVENTORY ──────────────────────────────────────────────
+  function addItem() {
+    const name = document.getElementById('item-name').value.trim();
+    const cost = parseFloat(document.getElementById('item-cost').value);
+    const sale = parseFloat(document.getElementById('item-sale').value) || null;
+    const status = document.getElementById('item-status').value;
+    const errEl = document.getElementById('item-error');
+    if (!name || isNaN(cost)) { errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+    inventory.push({ id: Date.now(), name, cost, sale, status, date: new Date().toLocaleDateString() });
+    saveInventory();
+    document.getElementById('item-name').value = '';
+    document.getElementById('item-cost').value = '';
+    document.getElementById('item-sale').value = '';
+    document.getElementById('item-status').value = 'held';
+    renderInventory();
+  }
+
+  function deleteItem(id) {
+    inventory = inventory.filter(i => i.id !== id);
+    saveInventory();
+    renderInventory();
+  }
+
+  function renderInventory() {
+    const tbody = document.getElementById('inventory-body');
+    const empty = document.getElementById('inventory-empty');
+    if (inventory.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = inventory.map(item => {
+      const profit = item.sale != null ? item.sale - item.cost : null;
+      const margin = profit != null && item.cost > 0 ? ((profit / item.cost) * 100).toFixed(0) : null;
+      const profitStr = profit != null ? `<span class="${profit >= 0 ? 'profit-pos' : 'profit-neg'} td-mono">${profit >= 0 ? '+' : ''}£${profit.toFixed(2)}</span>` : `<span class="profit-pend td-mono">—</span>`;
+      const marginStr = margin != null ? `<span class="${profit >= 0 ? 'profit-pos' : 'profit-neg'} td-mono">${margin}%</span>` : `<span class="profit-pend td-mono">—</span>`;
+      const saleStr = item.sale != null ? `<span class="td-mono">£${item.sale.toFixed(2)}</span>` : `<span class="profit-pend">—</span>`;
+      const statusCls = { sold:'status-sold', listed:'status-listed', held:'status-held' }[item.status];
+      const statusLabel = { sold:'Sold', listed:'Listed', held:'Holding' }[item.status];
+      return `<tr>
+        <td>${item.name}<br><span style="font-size:0.72rem;color:var(--muted)">${item.date}</span></td>
+        <td class="td-mono">£${item.cost.toFixed(2)}</td>
+        <td>${saleStr}</td>
+        <td>${profitStr}</td>
+        <td>${marginStr}</td>
+        <td><span class="status-badge ${statusCls}">${statusLabel}</span></td>
+        <td><button class="btn-del" onclick="deleteItem(${item.id})">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── DASHBOARD ──────────────────────────────────────────────
+  function renderDashboard() {
+    const sold = inventory.filter(i => i.status === 'sold' && i.sale != null);
+    const totalSpent = inventory.reduce((s, i) => s + i.cost, 0);
+    const totalRevenue = sold.reduce((s, i) => s + i.sale, 0);
+    const totalProfit = sold.reduce((s, i) => s + (i.sale - i.cost), 0);
+    const avgMargin = sold.length ? (sold.reduce((s, i) => s + ((i.sale - i.cost) / i.cost) * 100, 0) / sold.length).toFixed(0) : 0;
+
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Items</div><div class="stat-value neutral">${inventory.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Spent</div><div class="stat-value warn">£${totalSpent.toFixed(0)}</div></div>
+      <div class="stat-card"><div class="stat-label">Revenue (Sold)</div><div class="stat-value neutral">£${totalRevenue.toFixed(0)}</div></div>
+      <div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-value ${totalProfit >= 0 ? 'accent' : 'warn'}">£${totalProfit.toFixed(0)}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Margin</div><div class="stat-value ${avgMargin >= 0 ? 'accent' : 'warn'}">${avgMargin}%</div></div>
+      <div class="stat-card"><div class="stat-label">Items Sold</div><div class="stat-value neutral">${sold.length}</div></div>`;
+
+    const list = document.getElementById('dash-list');
+    if (inventory.length === 0) { list.innerHTML = '<div class="empty-state"><div class="icon">📊</div>Add items in the Inventory tab to see your stats here.</div>'; return; }
+    list.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Item</th><th>Cost</th><th>Sale</th><th>Profit</th><th>Status</th></tr></thead>
+      <tbody>${inventory.map(item => {
+        const profit = item.sale != null ? item.sale - item.cost : null;
+        const profitStr = profit != null ? `<span class="${profit >= 0 ? 'profit-pos' : 'profit-neg'} td-mono">${profit >= 0 ? '+' : ''}£${profit.toFixed(2)}</span>` : `<span class="profit-pend">—</span>`;
+        const statusCls = { sold:'status-sold', listed:'status-listed', held:'status-held' }[item.status];
+        const statusLabel = { sold:'Sold', listed:'Listed', held:'Holding' }[item.status];
+        return `<tr><td>${item.name}</td><td class="td-mono">£${item.cost.toFixed(2)}</td><td class="td-mono">${item.sale != null ? '£' + item.sale.toFixed(2) : '—'}</td><td>${profitStr}</td><td><span class="status-badge ${statusCls}">${statusLabel}</span></td></tr>`;
+      }).join('')}</tbody></table></div>`;
+  }
+
+  renderInventory();
+</script>
+</body>
+</html>
